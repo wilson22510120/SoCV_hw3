@@ -33,3 +33,4 @@
 *.app
 
 bddv
+.vscode/settings.json

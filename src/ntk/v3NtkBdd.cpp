@@ -83,7 +83,7 @@ void V3Ntk::buildNtkBdd() {
   }
   _isBddBuilt = true;
 
-  cout << "inputSize: " << getInputSize() << "  inout: " << getInoutSize() << "  out: " << getOutputSize() << endl;
+  // cout << "inputSize: " << getInputSize() << "  inout: " << getInoutSize() << "  out: " << getOutputSize() << endl;
 }
 
 void V3Ntk::buildBdd(const V3NetId& netId) {
@@ -105,7 +105,7 @@ void V3Ntk::buildBdd(const V3NetId& netId) {
       
       bool b1 = id_1.cp; // true if inverted
       bool b2 = id_2.cp;
-      cout << orderedNets[i].id << "  "<< id_1.id << " " << id_2.id << endl;
+      // cout << orderedNets[i].id << "  "<< id_1.id << " " << id_2.id << endl;
       BddNodeV n1 = bddMgrV->getBddNodeV(id_1.id);
       BddNodeV n2 = bddMgrV->getBddNodeV(id_2.id);
       BddNodeV f = (b1 ? ~n1 : n1) & (b2 ? ~n2 : n2);

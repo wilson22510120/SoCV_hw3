@@ -17,10 +17,10 @@ BddMgrV::buildPInitialState()
 {
    // TODO : remember to set _initState
    // Set Initial State to All Zero
-
+   V3Ntk* ntk = v3Handler.getCurHandler()->getNtk();
    BddNodeV nowNode = BddNodeV::_one;
-   for (unsigned i = 0; i < v3Handler.getCurHandler()->getNtk()->getLatchSize(); ++i) {
-      const V3NetId& nId = v3Handler.getCurHandler()->getNtk()->getLatch(i);
+   for (unsigned i = 0; i < ntk->getLatchSize(); ++i) {
+      const V3NetId& nId = ntk->getLatch(i);
       nowNode &= (getBddNodeV(nId.id) ^ BddNodeV::_zero);
    }
    _initState = nowNode;
@@ -31,15 +31,16 @@ BddMgrV::buildPTransRelation()
 {
    // TODO : remember to set _tr, _tri
    BddNodeV nowNode = BddNodeV::_one;  
-   for (unsigned i = 0, n = v3Handler.getCurHandler()->getNtk()->getLatchSize(); i < n; ++i) {
-      const V3NetId& latchId = v3Handler.getCurHandler()->getNtk()->getLatch(i);
-      const V3NetId& latchInputId = v3Handler.getCurHandler()->getNtk()->getInputNetId(latchId, 0);
-      const V3NetId& YId = v3Handler.getCurHandler()->getNtk()->getLatch(i + n);
+   V3Ntk* ntk = v3Handler.getCurHandler()->getNtk();
+   for (unsigned i = 0, n = ntk->getLatchSize(); i < n; ++i) {
+      const V3NetId& latchId = ntk->getLatch(i);
+      const V3NetId& latchInputId = ntk->getInputNetId(latchId, 0);
+      const V3NetId& YId = ntk->getLatch(i + n);
       nowNode &= (getBddNodeV(YId.id) ^ getBddNodeV(latchInputId.id));
    }
    _tri = nowNode;
-   for (unsigned i = 0; i < v3Handler.getCurHandler()->getNtk()->getInputSize(); ++i) {
-      nowNode = nowNode.exist(v3Handler.getCurHandler()->getNtk()->getInput(i).id);
+   for (unsigned i = 0; i < ntk->getInputSize(); ++i) {
+      nowNode = nowNode.exist(ntk->getInput(i).id);
    }
    _tr = nowNode;
 }
@@ -49,11 +50,30 @@ BddMgrV::buildPImage( int level )
 {
    // TODO : remember to add _reachStates and set _isFixed
    // Note:: _reachStates record the set of reachable states
-   _reachStates.push_back(_initState);
+   V3Ntk* ntk = v3Handler.getCurHandler()->getNtk();
    BddNodeV SnY, SnX = _initState, Sn1Y, Sn1X;
+   _reachStates.push_back(_initState);
+
    for (unsigned i = 0; i < level; ++i) {
-       
+      // Sn+1(Y) = TR(Y, X)&Sn(X).exist(X)
+      Sn1Y = _tr & SnX;
+      for (unsigned j = 0; j < ntk->getLatchSize(); ++i) {
+         Sn1Y = Sn1Y.exist(ntk->getLatch(j).id);
+      }
+
+      // X <- Y
+      Sn1X = Sn1Y;
+
+      // Rn+1(X) = Rn(x) | Sn+1(X)
+      _reachStates.push_back(Sn1X);
+
+      // check Rn+1 == Rn
+
+      // next level
+      SnX = Sn1X;
+      SnY = Sn1Y;
    }
+
 }
 
 void 
