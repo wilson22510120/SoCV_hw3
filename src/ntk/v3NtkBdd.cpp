@@ -69,9 +69,9 @@ void V3Ntk::buildNtkBdd() {
   // Perform DFS traversal from DFF inputs, inout, and output gates.
   // Collect ordered nets to a V3NetVec
   // Construct BDDs in the DFS order
-  for (unsigned i = 0, n = getInputSize();i < n; ++i) {
-    V3NetId id = getInput(i);
-    buildBdd(id);
+  for (unsigned i = 0, n = getLatchSize();i < n; ++i) {
+    V3NetId id = getLatch(i);
+    buildBdd(getInputNetId(id, 0));
   }  
   for (unsigned i = 0, n = getOutputSize();i < n; ++i) {
     V3NetId id = getOutput(i);
