@@ -3,7 +3,9 @@ blast ntk
 bsetorder -file
 bconstruct -all
 pinit init
+breport init
 ptrans ti t
+
 pimage img_0
 pcheckp -o 0
 pimage img_1

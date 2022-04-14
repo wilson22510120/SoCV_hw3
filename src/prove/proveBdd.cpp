@@ -35,40 +35,58 @@ BddMgrV::buildPTransRelation()
    for (unsigned i = 0, n = ntk->getLatchSize(); i < n; ++i) {
       const V3NetId& latchId = ntk->getLatch(i);
       const V3NetId& latchInputId = ntk->getInputNetId(latchId, 0);
-      const BddNodeV& latchInputNode = latchId.cp ? ~getBddNodeV(latchInputId.id) : getBddNodeV(latchInputId.id);
-      const BddNodeV& Y = getSupport(n + latchId.id);
-      nowNode &= (Y ^ latchInputNode);
+      BddNodeV latchInputNode = getBddNodeV(latchInputId.id);
+      if(latchInputId.cp) latchInputNode = ~latchInputNode;       // BddNodeV latchInputNode = latchId.cp ? ~getBddNodeV(latchInputId.id) : getBddNodeV(latchInputId.id);
+      // const BddNodeV& Y = getSupport(n + latchId.id);
+      nowNode &= ~(getSupport(n + latchId.id) ^ latchInputNode);
    }
    _tri = nowNode;
    for (unsigned i = 0; i < ntk->getInputSize(); ++i) {
       nowNode = nowNode.exist(ntk->getInput(i).id);
    }
    _tr = nowNode;
+
+   
 }
 
 void
-BddMgrV::buildPImage( int level )
+BddMgrV::buildPImage(int level)
 {
    // TODO : remember to add _reachStates and set _isFixed
    // Note:: _reachStates record the set of reachable states
    V3Ntk* ntk = v3Handler.getCurHandler()->getNtk();
-   BddNodeV SnY, SnX = _initState, Sn1Y, Sn1X;
-   _reachStates.push_back(_initState);
+
+   if (_reachStates.empty()) _reachStates.push_back(_initState);
+
+   if (_isFixed) {
+      cout << "Fixed point is reached ( time : "<< _reachStates.size() - 2 <<" )" <<endl;
+      return;
+   }
+
+   BddNodeV SnY, SnX = getPReachState(), Sn1Y, Sn1X;
 
    for (unsigned i = 0; i < level; ++i) {
       // Sn+1(Y) = TR(Y, X)&Sn(X).exist(X)
       Sn1Y = _tr & SnX;
-      for (unsigned j = 0; j < ntk->getLatchSize(); ++i) {
+      for (unsigned j = 0; j < ntk->getLatchSize(); ++j) {
          Sn1Y = Sn1Y.exist(ntk->getLatch(j).id);
       }
-
+      
       // X <- Y
-      Sn1X = Sn1Y;
+      bool isMoved;
+      const V3NetId& id = ntk->getLatch(0);
+      Sn1X = Sn1Y.nodeMove(id.id + ntk->getLatchSize(), id.id, isMoved);
 
       // Rn+1(X) = Rn(x) | Sn+1(X)
-      _reachStates.push_back(Sn1X);
+      const BddNodeV& back =  _reachStates.back();
+      _reachStates.push_back(Sn1X | back);
 
       // check Rn+1 == Rn
+      if (_reachStates.back() == _reachStates[_reachStates.size() - 2]) {
+         cout << "Fixed point is reached ( time : "<< _reachStates.size() - 2 <<" )" <<endl;
+         _isFixed = true;
+         return;
+      }
 
       // next level
       SnX = Sn1X;

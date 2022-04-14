@@ -1,0 +1,11 @@
+read rtl tests/a.v
+blast ntk
+bsetorder -file
+bconstruct -all
+pinit init
+
+ptrans ti t
+
+pimage img_0
+breport img_0
+pcheckp -o 0
