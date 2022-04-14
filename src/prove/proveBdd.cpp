@@ -71,7 +71,7 @@ BddMgrV::buildPImage(int level)
       for (unsigned j = 0; j < ntk->getLatchSize(); ++j) {
          Sn1Y = Sn1Y.exist(ntk->getLatch(j).id);
       }
-      
+
       // X <- Y
       bool isMoved;
       const V3NetId& id = ntk->getLatch(0);
@@ -83,7 +83,7 @@ BddMgrV::buildPImage(int level)
 
       // check Rn+1 == Rn
       if (_reachStates.back() == _reachStates[_reachStates.size() - 2]) {
-         cout << "Fixed point is reached ( time : "<< _reachStates.size() - 2 <<" )" <<endl;
+         cout << "Fixed point is reached (time : "<< _reachStates.size() - 2 <<")" <<endl;
          _isFixed = true;
          return;
       }
@@ -99,4 +99,43 @@ void
 BddMgrV::runPCheckProperty( const string &name, BddNodeV monitor )
 {
    // TODO : prove the correctness of AG(~monitor)
+   V3Ntk* ntk = v3Handler.getCurHandler()->getNtk();
+   const BddNodeV& target = monitor & getPReachState();
+   if (!target.countCube()) {
+      // target is safe
+      if (_isFixed) {
+         cout << "Monitor \"" << name << "\" is safe." << endl;
+      }
+      else {
+         cout << "Monitor \"" << name << "\" is safe up to time " << _reachStates.size() - 1 << "." << endl;
+      }
+   }
+   else {
+      // counter example
+      cout << "Monitor \"" << name << "\" is violated." << endl; 
+      cout << "Counter Example:" << endl;
+
+      BddNodeV Sn1X = target.getCube();
+      bool isMoved;
+      int t = 0;
+      while (!(monitor & _reachStates[t]).countCube()) ++t;
+      for (int k = t; t >= 0; --t) {
+         Sn1X = Sn1X.nodeMove(ntk->getLatch(0).id, ntk->getLatch(0).id + ntk->getLatchSize(), isMoved);
+         BddNodeV VnI = _tri & Sn1X;
+         for (unsigned i = 0; i < ntk->getLatchSize(); ++i) {
+            VnI = VnI.exist(ntk->getLatch(i).id);
+         }
+
+         Sn1X = _tri & Sn1X & VnI;
+         for (unsigned i = 0; i < ntk->getInputSize(); ++i) {
+            Sn1X = Sn1X.exist(ntk->getInput(i).id);
+         }
+         for (unsigned i = 0; i < ntk->getLatchSize(); ++i) {
+            Sn1X = Sn1X.exist(ntk->getLatch(i).id + ntk->getLatchSize());
+         }
+
+
+         cout << k-t << ": " << VnI.getCube().toString()[1] << endl;
+      }
+   }
 }
