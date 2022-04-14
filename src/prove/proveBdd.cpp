@@ -21,7 +21,7 @@ BddMgrV::buildPInitialState()
    BddNodeV nowNode = BddNodeV::_one;
    for (unsigned i = 0; i < ntk->getLatchSize(); ++i) {
       const V3NetId& nId = ntk->getLatch(i);
-      nowNode &= (getBddNodeV(nId.id) ^ BddNodeV::_zero);
+      nowNode &= ~getSupport(nId.id);
    }
    _initState = nowNode;
 }
@@ -35,8 +35,9 @@ BddMgrV::buildPTransRelation()
    for (unsigned i = 0, n = ntk->getLatchSize(); i < n; ++i) {
       const V3NetId& latchId = ntk->getLatch(i);
       const V3NetId& latchInputId = ntk->getInputNetId(latchId, 0);
-      const V3NetId& YId = ntk->getLatch(i + n);
-      nowNode &= (getBddNodeV(YId.id) ^ getBddNodeV(latchInputId.id));
+      const BddNodeV& latchInputNode = latchId.cp ? ~getBddNodeV(latchInputId.id) : getBddNodeV(latchInputId.id);
+      const BddNodeV& Y = getSupport(n + latchId.id);
+      nowNode &= (Y ^ latchInputNode);
    }
    _tri = nowNode;
    for (unsigned i = 0; i < ntk->getInputSize(); ++i) {
